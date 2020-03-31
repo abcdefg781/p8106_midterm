@@ -1,0 +1,82 @@
+---
+title: "Questionnaire Data"
+author: "Adeline Shin"
+date: "3/31/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(nhanesA)
+```
+
+# Extracting Demographic Data
+```{r}
+demographic_full_df = nhanes("DEMO_I") %>% 
+  janitor::clean_names()
+
+demographic_df = demographic_full_df %>% 
+  select(seqn, riagendr, ridageyr, ridreth1, ridreth3, dmdborn4, dmdeduc3, dmdeduc2, indhhin2) %>% 
+  filter(ridageyr > 17)
+
+write.csv(demographic_df, "./demographic_data.csv")
+```
+
+# Extracting Questionnaire Data
+```{r}
+# Extract Particular Answers from different Datasets
+bp_cholesterol_df = nhanes("BPQ_I") %>% 
+  janitor::clean_names() %>% 
+  select(seqn, bpq020)
+
+cv_health_df = nhanes("CDQ_I") %>% 
+  janitor::clean_names() %>% 
+  select(seqn, cdq001)
+
+consumer_behavior_df = nhanes("CBQ_I") %>% 
+  janitor::clean_names() %>% 
+  select(seqn, cbd071, cbd121, cbd131)
+
+health_status_df = nhanes("HSQ_I") %>% 
+  janitor::clean_names() %>% 
+  select(seqn, hsd010)
+
+diabetes_df = nhanes("DIQ_I") %>% 
+  janitor::clean_names() %>% 
+  select(seqn, diq010)
+
+diet_behavior_df = nhanes("DBQ_I") %>% 
+  janitor::clean_names() %>% 
+  select(seqn, dbq700, dbd895)
+
+food_security_df = nhanes("FSQ_I") %>% 
+  janitor::clean_names() %>% 
+  select(seqn, fsd032a, fsd032c, fsdhh)
+
+insurance_df = nhanes("HIQ_I") %>% 
+  janitor::clean_names() %>% 
+  select(seqn, hiq011, hiq270)
+
+activity_df = nhanes("PAQ_I") %>% 
+  janitor::clean_names() %>% 
+  select(seqn, paq605)
+
+smoking_df = nhanes("SMQ_I") %>% 
+  janitor::clean_names() %>% 
+  select(seqn, smq020)
+
+# Combining data into full questionnaire dataframe
+questionnaire_full_df = full_join(bp_cholesterol_df, cv_health_df, by = "seqn")
+questionnaire_full_df = full_join(questionnaire_full_df, consumer_behavior_df, by = "seqn")
+questionnaire_full_df = full_join(questionnaire_full_df, health_status_df, by = "seqn")
+questionnaire_full_df = full_join(questionnaire_full_df, diabetes_df, by = "seqn")
+questionnaire_full_df = full_join(questionnaire_full_df, diet_behavior_df, by = "seqn")
+questionnaire_full_df = full_join(questionnaire_full_df, food_security_df, by = "seqn")
+questionnaire_full_df = full_join(questionnaire_full_df, insurance_df, by = "seqn")
+questionnaire_full_df = full_join(questionnaire_full_df, activity_df, by = "seqn")
+questionnaire_full_df = full_join(questionnaire_full_df, smoking_df, by = "seqn")
+
+write.csv(questionnaire_full_df, "./questionnaire_data.csv")
+```
+
