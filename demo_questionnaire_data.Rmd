@@ -20,6 +20,7 @@ demographic_df = demographic_full_df %>%
   select(seqn, riagendr, ridageyr, ridreth1, ridreth3, dmdborn4, dmdeduc3, dmdeduc2, indhhin2) %>% 
   filter(ridageyr > 17)
 
+# Write data to a csv for easier access later
 write.csv(demographic_df, "./demographic_data.csv")
 ```
 
@@ -77,6 +78,7 @@ questionnaire_full_df = full_join(questionnaire_full_df, insurance_df, by = "seq
 questionnaire_full_df = full_join(questionnaire_full_df, activity_df, by = "seqn")
 questionnaire_full_df = full_join(questionnaire_full_df, smoking_df, by = "seqn")
 
+# Write the data to a csv for easier access later
 write.csv(questionnaire_full_df, "./questionnaire_data.csv")
 ```
 
