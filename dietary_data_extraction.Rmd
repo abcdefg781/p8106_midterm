@@ -11,7 +11,17 @@ library(tidyverse)
 library(nhanesA)
 ```
 
-```{r}
+### Brings you to NHANES website page (not actual data)
 
+```{r}
+#browseNHANES(year = 2016, data_group = "DIET")
+```
+
+### Pulling "Dietary Interview - Total Nutrient Intakes, First Day" & "Dietary Supplement Use 24-Hour - Total Dietary Supplements, First Day" Tables
+
+```{r}
+nutrients_full_df <- nhanes('DR1TOT_I')
+
+supplements_full_df <- nhanes('DS1TOT_I')
 ```
 
