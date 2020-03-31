@@ -11,6 +11,7 @@ library(tidyverse)
 library(nhanesA)
 ```
 
+
 ### Brings you to NHANES website page (not actual data)
 
 ```{r}
@@ -23,13 +24,6 @@ library(nhanesA)
 nutrients_full_df <- nhanes('DR1TOT_I')
 
 supplements_full_df <- nhanes('DS1TOT_I')
-```
-
-### Pulling Cholestrol (response variable)
-
-```{r}
-cholestrol_df <- as.data.frame(pull(nutrients_full_df, var = "DR1TCHOL")) %>% 
-  rename(cholestrol = `pull(nutrients_full_df, var = "DR1TCHOL")`)
 ```
 
 ### Tidying Nutriets Dataframe
