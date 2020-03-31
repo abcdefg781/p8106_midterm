@@ -25,3 +25,24 @@ nutrients_full_df <- nhanes('DR1TOT_I')
 supplements_full_df <- nhanes('DS1TOT_I')
 ```
 
+### Pulling Cholestrol (response variable)
+
+```{r}
+cholestrol_df <- as.data.frame(pull(nutrients_full_df, var = "DR1TCHOL")) %>% 
+  rename(cholestrol = `pull(nutrients_full_df, var = "DR1TCHOL")`)
+```
+
+### Tidying Nutriets Dataframe
+
+```{r}
+nutrients_selected_df <- nutrients_full_df %>% 
+  select("SEQN", "WTDRD1", "DBD100", "DRQSPREP", "DRQSDIET", "DR1TNUMF", "DR1TKCAL", "DR1TPROT", "DR1TCARB", "DR1TSUGR", "DR1TFIBE", "DR1TTFAT", "DR1TCAFF", "DR1TALCO", "DR1.300", "DR1.320Z", "DR1.320Z", "DRD340", "DRD360")
+```
+
+### Tidying Supplements Dataframe
+
+```{r}
+supplements_selected_df <- supplements_full_df %>% 
+  select("SEQN", "DS1DSCNT", "DS1ANCNT")
+```
+
