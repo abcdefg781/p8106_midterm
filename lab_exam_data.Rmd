@@ -1,0 +1,67 @@
+---
+title: "Lab & Examination data"
+author: "Ngoc Duong - nqd2000"
+date: "3/31/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(nhanesA)
+library(purrr)
+```
+
+
+```{r}
+#response variable low-density cholesterol
+chol_df = nhanes("TRIGLY_I") %>% 
+  janitor::clean_names() %>% 
+  select(seqn, lbdldl) 
+
+#extract variables from laboratory datasets
+#albumin and creatinine
+alb_cr_df = nhanes("ALB_CR_I") %>% 
+  janitor::clean_names() %>% 
+  select(seqn, urxuma, urxucr) 
+
+#complete blood count with differentials
+blood_df = nhanes("CBC_I") %>% 
+  janitor::clean_names() %>% 
+  select(seqn, lbxlypct, lbxmopct, lbxnepct, lbxhgb, lbxhct) 
+
+#high sensitivity C-reactive protein
+crp_df = nhanes("HSCRP_I") %>% 
+  janitor::clean_names() %>% 
+  select(seqn, lbxhscrp) 
+
+#extract variables from standard biochemistry profiles
+biochem_df = nhanes("BIOPRO_I") %>% 
+  janitor::clean_names() %>% 
+ select(seqn, lbxsapsi, lbxsc3si, lbxsgl, lbxsgb, lbxsgtsi, lbxsldsi, lbxsph, lbxsksi, lbxstb, lbxsua) 
+
+#extract variables from body measure profiles
+bm_df = nhanes("BMX_I") %>% 
+  janitor::clean_names() %>% 
+  select(seqn, bmxbmi, bmxwaist)
+
+#variables from blood pressure
+bp_df = nhanes("BPX_I") %>% 
+  janitor::clean_names() %>% 
+  select(seqn, bpxsy1, bpxsy2, bpxsy3, bpxdi1, bpxdi2, bpxdi3) %>%
+  mutate(bpxsy = rowMeans(select(., contains('bpxsy')), na.rm = TRUE),
+         bpxdi = rowMeans(select(., contains('bpxdi')), na.rm = TRUE)) %>% 
+  select(seqn, bpxsy, bpxdi)
+```
+Join datasets
+
+```{r}
+lab_exam_df = list(chol_df, alb_cr_df, biochem_df, blood_df, crp_df, bm_df, bp_df) %>% reduce(full_join, by = "seqn") 
+lab_exam_df_final = lab_exam_df[complete.cases(lab_exam_df),]
+```
+
+Write out csv for later reference 
+
+```{r}
+write.csv(lab_exam_df_final, "./lab_df.csv")
+```
+
