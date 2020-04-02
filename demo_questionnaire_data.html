@@ -374,9 +374,29 @@ summary {
 <pre class="r"><code>demographic_full_df = nhanes(&quot;DEMO_I&quot;) %&gt;% 
   janitor::clean_names()</code></pre>
 <pre><code>## Processing SAS dataset DEMO_I     ..</code></pre>
-<pre class="r"><code>demographic_df = demographic_full_df %&gt;% 
-  select(seqn, riagendr, ridageyr, ridreth1, ridreth3, dmdborn4, dmdeduc3, dmdeduc2, indhhin2) %&gt;% 
+<pre class="r"><code># Selecting categorical variables separately to replace unknown values with NAs
+demographic_partial = demographic_full_df %&gt;% 
+  select(seqn, riagendr, ridreth1, ridreth3, dmdborn4, dmdeduc3, dmdeduc2, indfmin2) %&gt;%
+  mutate(
+    riagendr = as.factor(riagendr),
+    ridreth1 = as.factor(ridreth1),
+    ridreth3 = as.factor(ridreth3),
+    dmdborn4 = as.factor(dmdborn4),
+    dmdeduc3 = as.factor(dmdeduc3),
+    dmdeduc2 = as.factor(dmdeduc2),
+    indfmin2 = as.factor(indfmin2)
+  ) %&gt;% 
+  na_if(., 99) %&gt;% 
+  na_if(., 77) %&gt;% 
+  na_if(., &quot;.&quot;)
+
+# Selecting all responses from adults
+demographic_age = demographic_full_df %&gt;% 
+  select(seqn, ridageyr) %&gt;% 
   filter(ridageyr &gt; 17)
+
+# Joining demographic data into one dataset
+demographic_df = left_join(demographic_age, demographic_partial, by = &quot;seqn&quot;)
 
 # Write data to a csv for easier access later
 write.csv(demographic_df, &quot;./demographic_data.csv&quot;)</code></pre>
@@ -434,6 +454,37 @@ questionnaire_full_df = full_join(questionnaire_full_df, food_security_df, by = 
 questionnaire_full_df = full_join(questionnaire_full_df, insurance_df, by = &quot;seqn&quot;)
 questionnaire_full_df = full_join(questionnaire_full_df, activity_df, by = &quot;seqn&quot;)
 questionnaire_full_df = full_join(questionnaire_full_df, smoking_df, by = &quot;seqn&quot;)
+
+questionnaire_numerical = questionnaire_full_df %&gt;% 
+  select(seqn, cbd071, cbd121, cbd131, dbd895) %&gt;% 
+  na_if(., 777777) %&gt;% 
+  na_if(., 999999) %&gt;% 
+  na_if(., &quot;.&quot;) %&gt;% 
+  na_if(., 7777) %&gt;% 
+  na_if(., 9999)
+
+questionnaire_categorical = questionnaire_full_df %&gt;% 
+  select(seqn, bpq020, cdq001, hsd010, diq010, dbq700, fsd032a, fsd032c, fsdhh, hiq011, hiq270, paq605, smq020) %&gt;% 
+  mutate(
+    bpq020 = as.factor(bpq020),
+    cdq001 = as.factor(cdq001),
+    hsd010 = as.factor(hsd010),
+    diq010 = as.factor(diq010),
+    dbq700 = as.factor(dbq700),
+    fsd032a = as.factor(fsd032a),
+    fsd032c = as.factor(fsd032c),
+    fsdhh = as.factor(fsdhh),
+    hiq011 = as.factor(hiq011),
+    hiq270 = as.factor(hiq270),
+    paq605 = as.factor(paq605),
+    smq020 = as.factor(smq020)
+  ) %&gt;% 
+  na_if(., 7) %&gt;% 
+  na_if(., 9) %&gt;% 
+  na_if(., &quot;.&quot;)
+  
+# Combining the categorical and numerical portions
+questionnaire_full_df = full_join(questionnaire_numerical, questionnaire_categorical, by = &quot;seqn&quot;)
 
 # Write the data to a csv for easier access later
 write.csv(questionnaire_full_df, &quot;./questionnaire_data.csv&quot;)</code></pre>
