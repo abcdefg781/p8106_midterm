@@ -1,0 +1,48 @@
+---
+title: "0.75 Elastic Net and 632 Bootstrap"
+author: "Adeline Shin"
+date: "4/2/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(caret)
+library(ModelMetrics)
+```
+
+# Loading the Data
+```{r}
+training_data = read_csv("./training_data_final.csv")
+test_data = read_csv("./test_data_final.csv")
+
+y = training_data$lbdldl
+x = model.matrix(lbdldl ~ ., training_data)[, -(1:2)]
+y_test = test_data$lbdldl
+x_test = model.matrix(lbdldl ~ ., test_data)[, -(1:2)]
+```
+
+# Model Creation using Elastic Net with 10-fold CV
+```{r}
+set.seed(13)
+ctrl1 = trainControl(method = "repeatedcv", number = 10, repeats = 5)
+
+elastic_net_fit = train(x, y,
+                        method = "glmnet",
+                        tuneGrid = expand.grid(alpha = 0.75, 
+                                          lambda = exp(seq(-1, 1, length=100))),
+                        preProc = c("center", "scale"),
+                        trControl = ctrl1)
+
+plot(elastic_net_fit)
+```
+
+As shown on the graph above, the value of lambda that gives the lowest RMSE value is `r elastic_net_fit$bestTune$lambda`.
+
+# Prediction using Elastic Net model
+```{r}
+elastic_net_prediction = predict(elastic_net_fit, newdata = test_data)
+elastic_net_mse = mse(y_test, elastic_net_prediction)
+```
+
