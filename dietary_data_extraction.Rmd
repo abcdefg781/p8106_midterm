@@ -30,7 +30,26 @@ supplements_full_df <- nhanes('DS1TOT_I')
 
 ```{r}
 nutrients_selected_df <- nutrients_full_df %>% 
-  select("SEQN", "WTDRD1", "DBD100", "DRQSPREP", "DRQSDIET", "DR1TNUMF", "DR1TKCAL", "DR1TPROT", "DR1TCARB", "DR1TSUGR", "DR1TFIBE", "DR1TTFAT", "DR1TCAFF", "DR1TALCO", "DR1.300", "DR1.320Z", "DR1.320Z", "DRD340", "DRD360")
+  select("SEQN", "DBD100", "DRQSPREP", "DRQSDIET", "DR1TNUMF", "DR1TKCAL", "DR1TPROT", "DR1TCARB", "DR1TSUGR", "DR1TFIBE", "DR1TTFAT", "DR1TCAFF", "DR1TALCO", "DR1.300", "DR1.320Z", "DR1.320Z", "DRD340", "DRD360") %>% 
+  mutate(
+    DBD100 = as.factor(DBD100),
+    DRQSPREP = as.factor(DRQSPREP),
+    DRQSDIET = as.factor(DRQSDIET),
+    DR1.300 = as.factor(DR1.300),
+    DRD340 = as.factor(DRD340),
+    DRD360 = as.factor(DRD360)
+  ) %>% 
+  mutate(
+    DBD100 = na_if(DBD100,"9"), 
+    DRQSPREP = na_if(DRQSPREP, "9"),
+    DRQSDIET = na_if(DRQSDIET, "9"), 
+    DR1.300 = na_if(DR1.300, "7"),
+    DR1.300 = na_if(DR1.300, "9"), 
+    DRD340 = na_if(DRD340, "7"),
+    DRD340 = na_if(DRD340, "9"),
+    DRD360 = na_if(DRD360, "7"),
+    DRD360 = na_if(DRD360, "9")
+  )
 ```
 
 ### Tidying Supplements Dataframe
