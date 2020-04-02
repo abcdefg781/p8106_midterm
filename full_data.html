@@ -521,6 +521,12 @@ questionnaire_categorical = questionnaire_full_df %&gt;%
 full_data_final = full_data[complete.cases(full_data),]</code></pre>
 <p>Write out csv for later reference</p>
 <pre class="r"><code>write.csv(full_data_final, &quot;./full_data_final.csv&quot;)</code></pre>
+<p>Split into Training and Test Data</p>
+<pre class="r"><code>training_data = full_data_final %&gt;% sample_frac(0.8)
+test_data = full_data_final %&gt;% sample_frac(0.2)
+
+write.csv(training_data, &quot;./training_data_final.csv&quot;)
+write.csv(test_data, &quot;./test_data_final.csv&quot;)</code></pre>
 
 
 
