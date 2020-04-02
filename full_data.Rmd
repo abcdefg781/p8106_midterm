@@ -9,6 +9,7 @@ output: html_document
 library(tidyverse)
 library(nhanesA)
 library(purrr)
+set.seed(13)
 ```
 
 Import and clean data from laboratory and examination files
@@ -59,7 +60,7 @@ Dietary and nutrients data
 ```{r warning = FALSE, message = FALSE}
 nutrient_df <- nhanes('DR1TOT_I') %>% 
    janitor::clean_names() %>% 
-   select(seqn, wtdrd1, dbd100, drqsprep, drqsdiet, dr1tnumf, dr1tkcal, dr1tprot, dr1tcarb, dr1tsugr, dr1tfibe, dr1ttfat, dr1tcaff, dr1talco, dr1_300, dr1_320z, dr1_320z, drd340, drd360) %>% 
+   select(seqn, dbd100, drqsprep, drqsdiet, dr1tnumf, dr1tkcal, dr1tprot, dr1tcarb, dr1tsugr, dr1tfibe, dr1ttfat, dr1tcaff, dr1talco, dr1_300, dr1_320z, dr1_320z, drd340, drd360) %>% 
     mutate(
     dbd100 = as.factor(dbd100),
     drqsprep = as.factor(drqsprep),
