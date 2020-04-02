@@ -9,6 +9,7 @@ output: html_document
 library(tidyverse)
 library(nhanesA)
 library(purrr)
+set.seed(13)
 ```
 
 Import and clean data from laboratory and examination files
