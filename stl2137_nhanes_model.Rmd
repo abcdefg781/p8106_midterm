@@ -7,6 +7,95 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(nhanesA)
 library(tidyverse)
+library(caret)
+library(ModelMetrics)
+set.seed(13)
 ```
 
+### Read/Load in Data
+
+```{r}
+train_dat <- read_csv("./training_data_final.csv")
+test_dat <- read_csv("./test_data_final.csv")
+
+y_train = train_dat$lbdldl
+x_train = model.matrix(lbdldl ~ ., train_dat)[, -(1:2)]
+
+
+y_test = test_dat$lbdldl
+x_test = model.matrix(lbdldl ~ ., test_dat)[, -(1:2)]
+
+
+```
+
+### LASSO using 10-fold CV 
+
+```{r}
+# creating training controls for 10-fold CV
+control1 <- trainControl(method = "cv", number = 10)
+
+
+lasso_fit <- train(x_train, y_train,
+                   method = "glmnet",
+                   tuneGrid = expand.grid(alpha=1, 
+                                          lambda = exp(seq(-1, 1, length = 100))),
+                   preProc = c("center", "scale"),
+                   trControl = control1
+)
+
+plot(lasso_fit, xTrans = function(x_train) log(x_train))
+
+lasso_fit$bestTune$lambda
+
+coef_estimates <- coef(lasso_fit$finalModel, lasso_fit$bestTune$lambda)
+num_coef <- sum(as.vector(coef_estimates) != 0)
+```
+
+### Predicting Lasso using 10-fold CV
+
+```{r}
+predict_lasso_fit <- predict(lasso_fit, newdata = test_dat)
+lasso_mse <- mse(y_test, predict_lasso_fit)
+```
+
+Using a $\lambda$ of `r lasso_fit$bestTune$lambda`, the MSE of the lasso regression on the test data is `r lasso_mse`. There are `r num_coef` non-zero coefficient estimates.
+
+### Lasso Using Leave One Out CV 
+
+```{r}
+# creating training controls for Leave One Out CV
+control2 <- trainControl(method = "LOOCV")
+
+lasso_loocv <- train(x_train, y_train,
+                   method = "glmnet",
+                   tuneGrid = expand.grid(alpha=1, 
+                                          lambda = exp(seq(0, 1, length = 100))),
+                   preProc = c("center", "scale"),
+                   trControl = control2
+)
+
+plot(lasso_loocv, xTrans = function(x_train) log(x_train))
+
+lasso_loocv$bestTune$lambda
+
+coef_estimates_loocv <- coef(lasso_loocv$finalModel, lasso_loocv$bestTune$lambda)
+num_coef_loocv <- sum(as.vector(coef_estimates_loocv) != 0)
+```
+
+### Predict Lasso with LOOCV 
+```{r}
+predict_lasso_loocv <- predict(lasso_loocv, newdata = test_dat)
+lasso_loocv_mse <- mse(y_test, predict_lasso_loocv)
+```
+
+Using a $\lambda$ of `r lasso_loocv$bestTune$lambda`, the MSE of the lasso regression on the test data is `r lasso_loocv_mse`. There are `r num_coef_loocv` non-zero coefficient estimates.
+
+### Comparing models based off their CV stats
+
+```{r}
+resampled_lasso <- resamples(list(k_fold = lasso_fit, loocv = lasso_loocv))
+
+resamp <- resamples(list(lm = lmFit, knn = knnFit))
+summary(resamp)
+```
 
