@@ -40,6 +40,9 @@ elastic_net_fit = train(lbdldl ~ .,
                         trControl = ctrl1)
 
 plot(elastic_net_fit)
+
+elastic_net_coef = coef(elastic_net_fit$finalModel, elastic_net_fit$bestTune$lambda)
+sum_coef = sum(as.vector(elastic_net_coef) != 0)
 ```
 
 As shown on the graph above, the value of lambda that gives the lowest RMSE value is `r elastic_net_fit$bestTune$lambda`.
