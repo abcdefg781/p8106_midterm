@@ -12,11 +12,56 @@ library(ModelMetrics)
 set.seed(13)
 ```
 
+# Data & Modeling Prep
+
 ### Read/Load in Data
 
 ```{r}
-train_dat <- read_csv("./training_data_final.csv")
-test_dat <- read_csv("./test_data_final.csv")
+train_dat <- read_csv("./training_data_final.csv") %>% 
+  mutate(
+    bpq020 = as.factor(bpq020),
+    cdq001 = as.factor(cdq001),
+    hsd010 = as.factor(hsd010),
+    diq010 = as.factor(diq010),
+    dbq700 = as.factor(dbq700),
+    fsd032a = as.factor(fsd032a),
+    fsd032c = as.factor(fsd032c),
+    fsdhh = as.factor(fsdhh),
+    hiq270 = as.factor(hiq270),
+    paq605 = as.factor(paq605),
+    smq020 = as.factor(smq020),
+    dbd100 = as.factor(dbd100),
+    drqsprep = as.factor(drqsprep),
+    drqsdiet = as.factor(drqsdiet),
+    dr1_300 = as.factor(dr1_300),
+    drd340 = as.factor(drd340),
+    drd360 = as.factor(drd360),
+    ds1dscnt = as.factor(ds1dscnt),
+    ds1ancnt = as.factor(ds1ancnt)
+  )
+
+test_dat <- read_csv("./test_data_final.csv") %>% 
+  mutate(
+    bpq020 = as.factor(bpq020),
+    cdq001 = as.factor(cdq001),
+    hsd010 = as.factor(hsd010),
+    diq010 = as.factor(diq010),
+    dbq700 = as.factor(dbq700),
+    fsd032a = as.factor(fsd032a),
+    fsd032c = as.factor(fsd032c),
+    fsdhh = as.factor(fsdhh),
+    hiq270 = as.factor(hiq270),
+    paq605 = as.factor(paq605),
+    smq020 = as.factor(smq020),
+    dbd100 = as.factor(dbd100),
+    drqsprep = as.factor(drqsprep),
+    drqsdiet = as.factor(drqsdiet),
+    dr1_300 = as.factor(dr1_300),
+    drd340 = as.factor(drd340),
+    drd360 = as.factor(drd360),
+    ds1dscnt = as.factor(ds1dscnt),
+    ds1ancnt = as.factor(ds1ancnt)
+  )
 
 y_train = train_dat$lbdldl
 x_train = model.matrix(lbdldl ~ ., train_dat)[, -(1:2)]
@@ -25,23 +70,51 @@ x_train = model.matrix(lbdldl ~ ., train_dat)[, -(1:2)]
 y_test = test_dat$lbdldl
 x_test = model.matrix(lbdldl ~ ., test_dat)[, -(1:2)]
 
-
-```
-
-### LASSO using 10-fold CV 
-
-```{r}
 # creating training controls for 10-fold CV
 control1 <- trainControl(method = "cv", number = 10)
 
 
-lasso_fit <- train(x_train, y_train,
-                   method = "glmnet",
-                   tuneGrid = expand.grid(alpha=1, 
-                                          lambda = exp(seq(-1, 1, length = 100))),
+```
+
+### Writing functions for models using 10-fold CV 
+
+```{r}
+### Function to run model
+
+k_fold_function <- function(method_sel, alpha_sel, lower_bound, upper_bound){
+  model_fit <- train(x_train, y_train,
+                   method = method_sel,
+                   tuneGrid = expand.grid(alpha = alpha_sel, 
+                                          lambda = exp(seq(lower_bound, upper_bound, length = 100))),
                    preProc = c("center", "scale"),
                    trControl = control1
 )
+  return(model_fit)
+}
+
+### Function to plot
+
+plot_k_fold_function <- function(model_fit){
+  model_plot <- plot(model_fit, xTrans = function(x_train) log(x_train))
+  return(model_plot)
+}
+
+
+```
+
+
+```{r}
+lasso_fit <- k_fold_function("glmnet", 1, -1, 1)
+
+lasso_plot <- plot_k_fold_function(lasso_fit)
+```
+
+
+# Pre Function Work 
+
+### LASSO using 10-fold CV 
+
+```{r}
 
 plot(lasso_fit, xTrans = function(x_train) log(x_train))
 
