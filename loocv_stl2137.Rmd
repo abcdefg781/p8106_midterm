@@ -73,6 +73,7 @@ x_test <- model.matrix(lbdldl ~ ., test_dat)[, -(1:2)]
 
 # creating training controls for 10-fold CV
 control1 <- trainControl(method = "cv", number = 10)
+control2 <- trainControl(method = "loocv")
 ```
 
 ### Linear Model with 10-fold CV
@@ -123,8 +124,6 @@ coef_function <- function(model_fit){
 num_coef_model <- sum(as.vector(coef_estimates_model) != 0)
 return(num_coef_model)
 }
-
-
 ```
 
 ### Prediction Functions
@@ -135,40 +134,120 @@ predict_mse_function <- function(model_fit){
   model_mse <- mse(y_test, predict_model_fit)
   return(model_mse)
 }
-
 ```
 
 
 ### Lasso Model with 10-fold CV
-
 ```{r}
 lasso_fit <- model_function("glmnet", 1, 0, 5, control1)
 lasso_plot <- plot_function(lasso_fit)
 lambda_function(lasso_fit)
 coef_function(lasso_fit)
-predict_mse_function(lasso_fit)
+lasso_mse <- predict_mse_function(lasso_fit)
 ```
 
+### Ridge Model with 10-fold CV 
+```{r}
+ridge_fit <- model_function("glmnet", 0, 0, 5, control1)
+ridge_plot <- plot_function(ridge_fit)
+lambda_function(ridge_fit)
+coef_function(ridge_fit)
+ridge_mse <- predict_mse_function(ridge_fit)
+```
+
+### Elastic Net Model (alpha = 0.75) with 10-fold CV 
+```{r}
+elast_fit <- model_function("glmnet", 0.75, 0, 5, control1)
+elast_plot <- plot_function(elast_fit)
+lambda_function(elast_fit)
+coef_function(elast_fit)
+elast_mse <- predict_mse_function(elast_fit)
+```
+
+### Elastic Net Model (alpha = 0.25) with 10-fold CV
+```{r}
+elast_25_fit <- model_function("glmnet", 0.25, 0, 5, control1)
+elast_25_plot <- plot_function(elast_25_fit)
+lambda_function(elast_25_fit)
+coef_function(elast_25_fit)
+elast_25_mse <- predict_mse_function(elast_25_fit)
+```
+
+### Comparing models
 
 ```{r}
-lasso_fit <- train(lbdldl ~ .,
+resamp <- resamples(list(lm = linear_fit,
+                         lasso = lasso_fit, 
+                         ridge = ridge_fit, 
+                         elastic_net_75 = elast_fit, 
+                         elastic_net_25 = elast_25_fit))
+summary(resamp)
+
+bwplot(resamp, metric = "RMSE")
+```
+
+# LOOCV
+
+### Linear Model with LOOCV 
+```{r}
+linear_loocv <- train(lbdldl ~ .,
                    data = train_dat,
-                   method = "glmnet",
-                   tuneGrid = expand.grid(alpha = 1, 
-                                          lambda = exp(seq(0, 5, length = 100))),
-                   preProc = c("center", "scale"),
-                   trControl = control1
-)
+                   method = "lm",
+                   trControl = control2)
 
-plot(lasso_fit, xTrans = function(x_train) log(x_train))
+summary(linear_loocv)
 
-lasso_fit$bestTune$lambda
-
-coef_estimates_lasso <- coef(lasso_fit$finalModel, lasso_fit$bestTune$lambda)
-num_coef_lasso <- sum(as.vector(coef_estimates_lasso) != 0)
-
-predict_lasso_fit <- predict(lasso_fit, newdata = test_dat)
-lasso_mse <- mse(y_test, predict_lasso_fit)
+lm_prediction_loocv <- predict(linear_loocv, newdata = test_dat)
+lm_mse <- mse(y_test, lm_prediction_loocv)
 ```
 
 
+### Lasso Model with LOOCV
+```{r}
+lasso_loocv <- model_function("glmnet", 1, -1, 5, control2)
+lasso_plot_loocv <- plot_function(lasso_loocv)
+lambda_function(lasso_loocv)
+coef_function(lasso_loocv)
+lasso_mse_loocv <- predict_mse_function(lasso_loocv)
+```
+
+### Ridge Model with LOOCV 
+```{r}
+ridge_loocv <- model_function("glmnet", 0, -1, 5, control2)
+ridge_plot_loocv <- plot_function(ridge_loocv)
+lambda_function(ridge_loocv)
+coef_function(ridge_loocv)
+ridge_mse_loocv <- predict_mse_function(ridge_loocv)
+```
+
+### Elastic Net Model (alpha = 0.75) with LOOCV 
+```{r}
+elast_loocv <- model_function("glmnet", 0.75, -1, 5, control2)
+elast_plot_loocv <- plot_function(elast_loocv)
+lambda_function(elast_loocv)
+coef_function(elast_loocv)
+elast_mse_loocv <- predict_mse_function(elast_loocv)
+```
+
+### Elastic Net Model (alpha = 0.25) with LOOCV
+```{r}
+elast_25_loocv <- model_function("glmnet", 0.25, -1, 5, control2)
+elast_25_plot_loocv <- plot_function(elast_25_loocv)
+lambda_function(elast_25_loocv)
+coef_function(elast_25_loocv)
+elast_25_mse_loocv <- predict_mse_function(elast_25_loocv)
+```
+
+### Comparing models
+
+```{r}
+resamp_loocv <- resamples(list(linear = linear_loocv,
+                               lasso_loocv = lasso_loocv,
+               ridge_loocv = ridge_loocv,
+               elastic_net_75 = elast_loocv,
+               elastic_net_25 = elast_25_loocv))
+
+summary(resamp_loocv)
+
+bwplot(resamp_loocv, metric = "RMSE", xlim = c(0, 50)) 
+```
