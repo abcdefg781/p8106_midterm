@@ -2,7 +2,7 @@
 title: "Model Comparison in Predicting Cholesterol Levels"
 subtitle: "P8106 Midterm Project"
 author: "Adeline Shin (as5951)"
-output: pdf_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
@@ -20,18 +20,6 @@ library(ModelMetrics)
 library(glmnet)
 library(bootstrap)
 ```
-
-# Introduction
-In the US, high cholesterol is a common health problem, affecting more than 12% of adults over the age of 20, according to the CDC. This data on cholesterol was collected as a part of the NHANES database, which consists of answers to a national survey conducted on nutrition and health behavior among Americans.
-
-Our group used the NHANES data to predict cholesterol based on demographic, dietary, laboratory, and questionnaire data from the surveys conducted during 2015-2016. We picked a combination of 63 potential predictors from these categories in order to cover potential social, behavioral, and genetic determinants of the outcome variable, LDL cholesterol levels. We were interested in determining which model type was the most effective in predicting cholesterol levels given values for all other predictors.
-
-# Methods
-The 63 variables as potential predictors were chosen by looking at the entirety of the NHANES dataset. Based on our research on causes of high cholesterol levels, we decided to pick variables across all sections of the NHANES dataset. The chosen variables are listed in Appendix A1, along with their variables names and categories.
-
-Using these 63 variables, we first separated the data into training and test data using an 80/20 split. The training data was used to generate the models, and the test data was used to compare to the predicted values from the models. Using the RMSE calculated between the test data and the predicted data, we were able to compare which method had the lowest RMSE value, and therefore the best predictive abilities. 
-
-In this project, the caret package in R was used to train all the models, and thus, the models compared were a linear model, a ridge regression model, a lasso model, and an elastic net model with an alpha value of 0.75. Our group members decided to use different cross-validation methods in order to see whether that would make a difference in terms of the final chosen model. In the models below, the 632 bootstrap cross-validation method was used, while other team members chose to use Monte Carlo cross-validation or leave one out cross-validation.
 
 # Results and Analysis
 ```{r include = FALSE}
@@ -96,25 +84,23 @@ x_test = model.matrix(lbdldl ~ ., test_data)[, -(1:2)]
 ## Linear Model
 ```{r echo = FALSE}
 set.seed(13)
-ctrl1 = trainControl(method = "boot632")
+ctrl1 = trainControl(method = "cv", number = 10)
 
 linear_fit = train(lbdldl ~ .,
                    data = training_data,
                    method = "lm",
                    trControl = ctrl1)
 
-linear_coef = summary(linear_fit)
+summary(linear_fit)
 
 lm_prediction = predict(linear_fit, newdata = test_data)
 lm_mse = mse(y_test, lm_prediction)
 ```
 
-At a 95% significance level, only 6 of the 63 predictors are significant, which likely means that the model does not fit the data well. In addition, from the model summary, the adjusted R-squared value is only 0.1146, which confirms that the model is not a good fit for the data and therefore will likely not predict well. The linear model has an MSE of `r lm_mse`, which is high, but expected, as the model itself did not have many significant variables.
 
 ## Ridge Regression Model
 ```{r echo = FALSE}
 set.seed(13)
-ctrl1 = trainControl(method = "boot632")
 
 ridge_fit = train(lbdldl ~ .,
                   data = training_data,
@@ -134,12 +120,10 @@ ridge_prediction = predict(ridge_fit, newdata = test_data)
 ridge_mse = mse(y_test, ridge_prediction)
 ```
 
-As shown on the graph above, the value of lambda that gives the lowest RMSE value is `r ridge_fit$bestTune$lambda`. The ridge model at this value of lambda gives `r ridge_coef_sum - 1` predictors in the final model, including the different factor levels, which can then be used to predict cholesterol levels. The ridge model gives an MSE of `r ridge_mse`, which is lower than that of the linear model.
 
 ## Lasso Model
 ```{r echo = FALSE}
 set.seed(13)
-ctrl1 = trainControl(method = "boot632")
 
 lasso_fit = train(lbdldl ~ .,
                   data = training_data,
@@ -164,7 +148,6 @@ As shown on the graph above, the value of lambda that gives the lowest RMSE valu
 ## Elastic Net Model
 ```{r echo = FALSE}
 set.seed(13)
-ctrl1 = trainControl(method = "boot632")
 
 elastic_net_fit = train(lbdldl ~ .,
                         data = training_data,
