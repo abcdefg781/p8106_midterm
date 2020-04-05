@@ -1,7 +1,7 @@
 ---
 title: "Model Comparison in Predicting Cholesterol Levels"
 subtitle: "P8106 Midterm Project"
-author: "Adeline Shin (as5951)"
+author: "Adeline Shin, Group Members: Sabrina Lin and Ngoc Duong"
 output: pdf_document
 ---
 
@@ -59,7 +59,8 @@ training_data = read_csv("./training_data_final.csv") %>%
     ridreth1 = as.factor(ridreth1),
     ridreth3 = as.factor(ridreth3),
     dmdborn4 = as.factor(dmdborn4)
-  )
+  ) %>% 
+  select(-hiq011)
 
 test_data = read_csv("./test_data_final.csv") %>% 
   mutate(
@@ -84,7 +85,8 @@ test_data = read_csv("./test_data_final.csv") %>%
     ridreth1 = as.factor(ridreth1),
     ridreth3 = as.factor(ridreth3),
     dmdborn4 = as.factor(dmdborn4)
-  )
+  ) %>% 
+  select(-hiq011)
 
 # Creating x and y Variables for Test and Training Data
 y = training_data$lbdldl
@@ -201,5 +203,50 @@ bwplot(resamp, metric = "RMSE", main = "RMSE comparison of 4 Models")
 The box plot shows that the model created using the elastic net gives the lowest RMSE among the four models created for the purpose of predicting cholesterol levels. Therefore, the elastic model should be chosen when using 632 bootstrap as the cross validation method to predict cholesterol levels.
 
 # Conclusion
+All three of our group members used different forms of cross-validation for our model training, which resulted in different conclusions of which model did the best in predicting cholesterol levels. For 632 bootstrap and Monte Carlo cross-validation methods, elastic net proved to have the best model, but for LOOCV, the lasso model was best at prediction. Therefore, it is extremely important to specify model parameters, including cross-validation technique, when determining which model will work best in predicting outcomes.
 
+While the elastic net model worked best with the 632 bootstrap cross-validation method, none of the models gave great results. The R-squared values for the models were all under 0.2, suggesting that none of the models created fit the data well, and therefore were not expected to predict cholesterol levels well. This is likely because we were dealing with real data with limited predictors, and the NHANES dataset did not necessarily capture all the predictors of high cholesterol level. In addition, given  more time, there could have been other model methods used to capture the data better, but those were not in the scope of this class so far.
+
+# Appendices
+## A1
+Table of Predictors and Corresponding Variable Names
+```{r echo = FALSE}
+variable_df = tibble(
+  variable = colnames(training_data[, -1]),
+  definition = c("Respondent Sequence Number", "LDL/Triglyceride Levels (Outcome)", 
+                "Albumin (ug/mL)", "Creatinine (mg/dL)", "Alkaline Phosphotase (IU/L)",
+                "Bicarbonate (mmol/L)", "Glucose (mg/dL)", "Gamma Glutamyl Transferase (U/L)",
+                "Lactate Dehydrogenase (U/L)", "Phosphorus (mg/dL)", "Potassium (mmol/L)", 
+                "Total Bilirubin (mg/dL)", "Uric acid (mg/dL)", "Lymphocyte percent (%)",
+                "Monocyte percent (%)", "Segmented neutrophils percent (%)", "Hemoglobin (g/dL)",
+                "Hematocrit (%)", "High-Sensitivity C-Reactive Protein (hs-CRP) (mg/L)", 
+                "Body Mass Index (kg/m**2)", "Waist Circumference (cm)", 
+                "Systolic: Blood pressure", "Diastolic: Blood pressure", 
+                "How often do you add ordinary salt to your food at the table?", 
+                "How often is ordinary salt or seasoned salt added in cooking or preparing foods in your household?", 
+                "Are you currently on any kind of diet?", 
+                "Total number of foods/beverages reported in the individual foods file", 
+                "Energy (kcal)", "Protein (gm)", "Carbohydrate (gm)", "Total sugars (gm)",
+                "Dietary fiber (gm)", "Total fat (gm)", "Caffeine (mg)", "Alcohol (gm)", 
+                "Was the amount of food that you ate yesterday much more than usual, usual, or much less than usual?", 
+                "Total plain water drank yesterday", 
+                "During the past 30 days did you eat any types of shellfish?", 
+                "During the past 30 days did you eat any types of fish?", 
+                "Total # of Dietary Supplements Taken", "Total # of Antacids Taken", 
+                "Money Spent at Grocery Stores in the Last 30 Days", 
+                "Money Spent on Eating Out in the Last 30 Days", 
+                "Money Spent on Takeout in the Last 30 Days", "Number of Meals Ordered", 
+                "Have you ever been told by a doctor or other health professional that you had hypertension?",
+                "Ever had any pain or discomfort in chest", "General Health Level", 
+                "Ever told that you had Diabetes", "How healthy is overall diet?", 
+                "Worried food would run out", "Can't afford to eat balanced meals", 
+                "Household food security", "Does the insurance plan cover prescription medicine?",
+                "Do you get regular physical activity?", "Smoked 100 cigarettes in lifetime", 
+                "Gender", "Age", "Education", "Recorded Race Hispanic Origin", 
+                "Recorded Race with Non-Hispanic Asian Category", "Born in the US or not", 
+                "Ratio of Family Income to Poverty")
+)
+
+knitr::kable(variable_df)
+```
 
