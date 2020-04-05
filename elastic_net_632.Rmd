@@ -26,14 +26,20 @@ In the US, high cholesterol is a common health problem, affecting more than 12% 
 
 Our group used the NHANES data to predict cholesterol based on demographic, dietary, laboratory, and questionnaire data from the surveys conducted during 2015-2016. We picked a combination of 63 potential predictors from these categories in order to cover potential social, behavioral, and genetic determinants of the outcome variable, LDL cholesterol levels. We were interested in determining which model type was the most effective in predicting cholesterol levels given values for all other predictors.
 
-# Methods
 The 63 variables as potential predictors were chosen by looking at the entirety of the NHANES dataset. Based on our research on causes of high cholesterol levels, we decided to pick variables across all sections of the NHANES dataset. The chosen variables are listed in Appendix A1, along with their variables names and categories.
 
 Using these 63 variables, we first separated the data into training and test data using an 80/20 split. The training data was used to generate the models, and the test data was used to compare to the predicted values from the models. Using the RMSE calculated between the test data and the predicted data, we were able to compare which method had the lowest RMSE value, and therefore the best predictive abilities. 
 
+# Exploratory Analysis and Visualization
+In order to conduct a preliminary exploratory analysis, the dataset was loaded using the nhanesA package, then the summary() and table() functions were used to find potential outliers or data that was coded differently than expected. 
+
+During this procedure, we found many missing values or unknown values that were coded with the values "7, 9, 777, 999, 777777, 999999, and ." in particular cases. These values were all converted to NAs for the purpose of this project, since we were not attempting to recover or predict missing data. We also noticed that some of the variables were separated into two categories for youth and adult, so we decided to just focus on adults for the scope of the project.
+
+After filtering out all of the rows with NAs and using only rows with data from adults, a dataframe of 661 observations was left. 
+
+# Models
 In this project, the caret package in R was used to train all the models, and thus, the models compared were a linear model, a ridge regression model, a lasso model, and an elastic net model with an alpha value of 0.75. Our group members decided to use different cross-validation methods in order to see whether that would make a difference in terms of the final chosen model. In the models below, the 632 bootstrap cross-validation method was used, while other team members chose to use Monte Carlo cross-validation or leave one out cross-validation.
 
-# Results and Analysis
 ```{r include = FALSE}
 # Loading the Data
 training_data = read_csv("./training_data_final.csv") %>% 
@@ -111,7 +117,7 @@ lm_prediction = predict(linear_fit, newdata = test_data)
 lm_mse = mse(y_test, lm_prediction)
 ```
 
-At a 95% significance level, only 6 of the 63 predictors are significant, which likely means that the model does not fit the data well. In addition, from the model summary, the adjusted R-squared value is only 0.1146, which confirms that the model is not a good fit for the data and therefore will likely not predict well. The linear model has an MSE of `r lm_mse`, which is high, but expected, as the model itself did not have many significant variables.
+At a 95% significance level, only 6 of the 63 predictors are significant, which likely means that the model does not fit the data well. In addition, from the model summary, the adjusted R-squared value is only 0.1146, which confirms that the model is not a good fit for the data and therefore will likely not predict well. The linear model has a cross-validated MSE of `r lm_mse`, which is high, but expected, as the model itself did not have many significant variables.
 
 ## Ridge Regression Model
 ```{r echo = FALSE}
@@ -136,7 +142,7 @@ ridge_prediction = predict(ridge_fit, newdata = test_data)
 ridge_mse = mse(y_test, ridge_prediction)
 ```
 
-As shown on the graph above, the value of lambda that gives the lowest RMSE value is `r ridge_fit$bestTune$lambda`. The ridge model at this value of lambda gives `r ridge_coef_sum - 1` predictors in the final model, including the different factor levels, which can then be used to predict cholesterol levels. The ridge model gives an MSE of `r ridge_mse`, which is lower than that of the linear model.
+As shown on the graph above, the value of lambda that gives the lowest RMSE value is `r ridge_fit$bestTune$lambda`. The ridge model at this value of lambda gives `r ridge_coef_sum - 1` predictors in the final model, including the different factor levels, which can then be used to predict cholesterol levels. The ridge model gives a cross-validated MSE of `r ridge_mse`, which is lower than that of the linear model.
 
 ## Lasso Model
 ```{r echo = FALSE}
@@ -161,7 +167,7 @@ lasso_prediction = predict(lasso_fit, newdata = test_data)
 lasso_mse = mse(y_test, lasso_prediction)
 ```
 
-As shown on the graph above, the value of lambda that gives the lowest RMSE value is `r lasso_fit$bestTune$lambda`. The lasso model at this value of lambda gives `r lasso_coef_sum - 1` variables in the final model, which can then be used to predict cholesterol levels. With this value of lambda, the lasso model gives an MSE of `r lasso_mse`. 
+As shown on the graph above, the value of lambda that gives the lowest RMSE value is `r lasso_fit$bestTune$lambda`. The lasso model at this value of lambda gives `r lasso_coef_sum - 1` variables in the final model, which can then be used to predict cholesterol levels. With this value of lambda, the lasso model gives a cross-validated MSE of `r lasso_mse`. 
 
 ## Elastic Net Model
 ```{r echo = FALSE}
@@ -186,7 +192,7 @@ elastic_prediction = predict(elastic_net_fit, newdata = test_data)
 elastic_mse = mse(y_test, elastic_prediction)
 ```
 
-As shown in the graph above, the elastic net model with an alpha of 0.75 has the lowest RMSE at a lambda value of `r elastic_net_fit$bestTune$lambda`. This combination of alpha and beta gives a model that contains `r elastic_coef_sum - 1` predictors in the final model. This model is then used to predict the cholesterol level and compared to the test data. Prediction of cholesterol levels using the elastic net model gives an MSE of `r elastic_mse`. 
+As shown in the graph above, the elastic net model with an alpha of 0.75 has the lowest RMSE at a lambda value of `r elastic_net_fit$bestTune$lambda`. This combination of alpha and beta gives a model that contains `r elastic_coef_sum - 1` predictors in the final model. This model is then used to predict the cholesterol level and compared to the test data. Prediction of cholesterol levels using the elastic net model gives a cross-validated MSE of `r elastic_mse`. 
 
 ## Model Comparison
 ```{r echo = FALSE}
