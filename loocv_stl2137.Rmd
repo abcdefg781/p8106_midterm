@@ -1,0 +1,174 @@
+---
+title: "nhanes_model_stl2137"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(caret)
+library(ModelMetrics)
+library(glmnet)
+set.seed(13)
+```
+
+```{r}
+train_dat <- read_csv("./training_data_final.csv") %>% 
+  mutate(
+    dbd100 = as.factor(dbd100),
+    drqsprep = as.factor(drqsprep),
+    drqsdiet = as.factor(drqsdiet),
+    dr1_300 = as.factor(dr1_300),
+    drd340 = as.factor(drd340),
+    drd360 = as.factor(drd360),
+    bpq020 = as.factor(bpq020),
+    cdq001 = as.factor(cdq001),
+    hsd010 = as.factor(hsd010),
+    diq010 = as.factor(diq010),
+    dbq700 = as.factor(dbq700),
+    fsd032a = as.factor(fsd032a),
+    fsd032c = as.factor(fsd032c),
+    fsdhh = as.factor(fsdhh),
+    hiq270 = as.factor(hiq270),
+    paq605 = as.factor(paq605),
+    smq020 = as.factor(smq020),
+    riagendr = as.factor(riagendr),
+    ridreth1 = as.factor(ridreth1),
+    ridreth3 = as.factor(ridreth3),
+    dmdborn4 = as.factor(dmdborn4)
+  )
+
+test_dat <- read_csv("./test_data_final.csv") %>% 
+  mutate(
+    dbd100 = as.factor(dbd100),
+    drqsprep = as.factor(drqsprep),
+    drqsdiet = as.factor(drqsdiet),
+    dr1_300 = as.factor(dr1_300),
+    drd340 = as.factor(drd340),
+    drd360 = as.factor(drd360),
+    bpq020 = as.factor(bpq020),
+    cdq001 = as.factor(cdq001),
+    hsd010 = as.factor(hsd010),
+    diq010 = as.factor(diq010),
+    dbq700 = as.factor(dbq700),
+    fsd032a = as.factor(fsd032a),
+    fsd032c = as.factor(fsd032c),
+    fsdhh = as.factor(fsdhh),
+    hiq270 = as.factor(hiq270),
+    paq605 = as.factor(paq605),
+    smq020 = as.factor(smq020),
+    riagendr = as.factor(riagendr),
+    ridreth1 = as.factor(ridreth1),
+    ridreth3 = as.factor(ridreth3),
+    dmdborn4 = as.factor(dmdborn4)
+  )
+
+# Creating x and y Variables for Test and Training Data
+y_train <- train_dat$lbdldl
+x_train <- model.matrix(lbdldl ~ ., train_dat)[, -(1:2)]
+
+y_test <- test_dat$lbdldl
+x_test <- model.matrix(lbdldl ~ ., test_dat)[, -(1:2)]
+
+# creating training controls for 10-fold CV
+control1 <- trainControl(method = "cv", number = 10)
+```
+
+### Linear Model with 10-fold CV
+
+```{r}
+linear_fit <- train(lbdldl ~ .,
+                   data = train_dat,
+                   method = "lm",
+                   trControl = control1)
+
+summary(linear_fit)
+
+lm_prediction <- predict(linear_fit, newdata = test_dat)
+lm_mse <- mse(y_test, lm_prediction)
+```
+
+### Writing Functions for Models 
+
+```{r}
+### Function to run model
+model_function <- function(method_sel, alpha_sel, lower_bound, upper_bound, control_sel){
+  model_fit <- train(lbdldl ~ .,
+                   data = train_dat,
+                   method = method_sel,
+                   tuneGrid = expand.grid(alpha = alpha_sel, 
+                                          lambda = exp(seq(lower_bound, upper_bound, length = 100))),
+                   preProc = c("center", "scale"),
+                   trControl = control_sel
+)
+  return(model_fit)
+}
+
+### Function to Plot
+plot_function <- function(model_fit){
+  model_plot <- plot(model_fit, xTrans = function(x_train) log(x_train))
+  return(model_plot)
+}
+
+### Function to Output Lambda 
+lambda_function <- function(model_fit){
+  lambda_fit <- model_fit$bestTune$lambda
+  return(lambda_fit)
+}
+
+### Function to Derive Number of Coefficients
+coef_function <- function(model_fit){
+  coef_estimates_model <- coef(model_fit$finalModel, model_fit$bestTune$lambda)
+num_coef_model <- sum(as.vector(coef_estimates_model) != 0)
+return(num_coef_model)
+}
+
+
+```
+
+### Prediction Functions
+
+```{r}
+predict_mse_function <- function(model_fit){
+  predict_model_fit <- predict(model_fit, newdata = test_dat)
+  model_mse <- mse(y_test, predict_model_fit)
+  return(model_mse)
+}
+
+```
+
+
+### Lasso Model with 10-fold CV
+
+```{r}
+lasso_fit <- model_function("glmnet", 1, 0, 5, control1)
+lasso_plot <- plot_function(lasso_fit)
+lambda_function(lasso_fit)
+coef_function(lasso_fit)
+predict_mse_function(lasso_fit)
+```
+
+
+```{r}
+lasso_fit <- train(lbdldl ~ .,
+                   data = train_dat,
+                   method = "glmnet",
+                   tuneGrid = expand.grid(alpha = 1, 
+                                          lambda = exp(seq(0, 5, length = 100))),
+                   preProc = c("center", "scale"),
+                   trControl = control1
+)
+
+plot(lasso_fit, xTrans = function(x_train) log(x_train))
+
+lasso_fit$bestTune$lambda
+
+coef_estimates_lasso <- coef(lasso_fit$finalModel, lasso_fit$bestTune$lambda)
+num_coef_lasso <- sum(as.vector(coef_estimates_lasso) != 0)
+
+predict_lasso_fit <- predict(lasso_fit, newdata = test_dat)
+lasso_mse <- mse(y_test, predict_lasso_fit)
+```
+
+
