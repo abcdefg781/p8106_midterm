@@ -1,19 +1,32 @@
 ---
-title: "nhanes_model_stl2137"
-output: html_document
+title: "P8106 Midterm Project Report"
+author: "Sabrina Lin stl2137"
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,warning=FALSE, message=FALSE)
 
 library(tidyverse)
 library(caret)
 library(ModelMetrics)
 library(glmnet)
-set.seed(13)
 ```
 
-```{r}
+# Introduction
+The National Health and Nutrition Examination Survey (NHANES) conducted by the CDC collects health and nutrition data among Americans going back to 1999. Our group is primarily interested in finding a model to predict LDL cholesterol levels in adults, as LDL cholesterol is associated with cardiovascular disease. We are also curious to see how different cross validation methods would affect which model was the best to predict LDL cholesterol. 
+
+The NHANES data is categorized into the following six categories: demographics, dietary, examination, laboratory, questionnaire, and limited access data. When building our dataset, we decided to look through and extract variables from the demographics, dietary, laboratory, and questionnaire data, utilizing the “nhanesA” package. Since the risk factors of having high LDL according to the Mayo Clinic are poor diet, obesity, lack of exercise, smoking, age, and diabetes, we included the variables that capture these risk factors in our dataset, in addition to other variables that could potentially capture social or genetic factors when predicting LDL cholesterol. Our final dataset consists of 661 observations with 63 predictors, 21 of them being categorical and the remaining 41 as numeric variables. 
+	
+# Exploratory Analysis
+
+Upon coming to our final dataset, we looked for near-zero variance predictors and found the variable, hiq011, representing whether the subject had healthcare, had only 1 subject in our training dataset who did not have healthcare. We thus took out hiq011, resulting in our eventual 63 predictor dataset. 
+After properly factoring the categorical variables,  removing missing values and observations that were imputed as unknown or missing, and excluding subjects under age 18, we joined our datasets to complete our final dataset. Because we are looking to predict LDL cholesterol using a model, we performed a 80/20 split into training and test datasets respectively. 
+
+
+```{r, echo=FALSE}
 train_dat <- read_csv("./training_data_final.csv") %>% 
   mutate(
     dbd100 = as.factor(dbd100),
@@ -76,23 +89,32 @@ control1 <- trainControl(method = "cv", number = 10)
 control2 <- trainControl(method = "loocv")
 ```
 
+# Models
+
+To predict LDL cholesterol, we used the 63 variables we pulled from the NHANES data (Appendix 1). Our group had decided that we would do a linear model, lasso model, ridge model, and elastic net model utilizing different cross validation techniques. I utilized 10-fold and leave one out cross validation (LOOCV). To do so, we utilized the `caret` package. 
+
+## 10-fold CV 
+
 ### Linear Model with 10-fold CV
 
-```{r}
+```{r,echo=FALSE}
+set.seed(13)
 linear_fit <- train(lbdldl ~ .,
                    data = train_dat,
                    method = "lm",
                    trControl = control1)
 
-summary(linear_fit)
+linear_fit_summary <- summary(linear_fit)
 
 lm_prediction <- predict(linear_fit, newdata = test_dat)
 lm_mse <- mse(y_test, lm_prediction)
 ```
 
+The linear model with 10-fold CV has a predicted MSE of `r lm_mse`.
+
+```{r, echo=FALSE}
 ### Writing Functions for Models 
 
-```{r}
 ### Function to run model
 model_function <- function(method_sel, alpha_sel, lower_bound, upper_bound, control_sel){
   model_fit <- train(lbdldl ~ .,
@@ -124,11 +146,10 @@ coef_function <- function(model_fit){
 num_coef_model <- sum(as.vector(coef_estimates_model) != 0)
 return(num_coef_model)
 }
-```
 
 ### Prediction Functions
 
-```{r}
+set.seed(13)
 predict_mse_function <- function(model_fit){
   predict_model_fit <- predict(model_fit, newdata = test_dat)
   model_mse <- mse(y_test, predict_model_fit)
@@ -136,46 +157,66 @@ predict_mse_function <- function(model_fit){
 }
 ```
 
-
 ### Lasso Model with 10-fold CV
-```{r}
-lasso_fit <- model_function("glmnet", 1, 0, 5, control1)
+```{r, echo=FALSE}
+set.seed(13)
+lasso_fit <- model_function("glmnet", 1, -1, 2, control1)
 lasso_plot <- plot_function(lasso_fit)
-lambda_function(lasso_fit)
-coef_function(lasso_fit)
+lasso_lambda <- lambda_function(lasso_fit)
+lasso_coef <- coef_function(lasso_fit)
 lasso_mse <- predict_mse_function(lasso_fit)
 ```
 
+The lambda that gives the lowest RMSE value is `r lasso_lambda`. The lasso model for this lambda has `r lasso_coef - 1` predictors in the final model, including the various factor levels to predict LDL cholesterol levels. 
+
+The lasso model gives a cross-validated MSE of `r lasso_mse`. 
+
+
 ### Ridge Model with 10-fold CV 
-```{r}
+```{r, echo=FALSE}
+set.seed(13)
 ridge_fit <- model_function("glmnet", 0, 0, 5, control1)
 ridge_plot <- plot_function(ridge_fit)
-lambda_function(ridge_fit)
-coef_function(ridge_fit)
+ridge_lambda <- lambda_function(ridge_fit)
+ridge_coef <- coef_function(ridge_fit)
 ridge_mse <- predict_mse_function(ridge_fit)
 ```
 
+The lambda that gives the lowest RMSE value is `r ridge_lambda`. The lasso model for this lambda has `r ridge_coef - 1` predictors in the final model, including the various factor levels to predict LDL cholesterol levels. 
+
+The lasso model gives a cross-validated MSE of `r ridge_mse`. 
+
 ### Elastic Net Model (alpha = 0.75) with 10-fold CV 
-```{r}
-elast_fit <- model_function("glmnet", 0.75, 0, 5, control1)
+```{r, echo=FALSE}
+set.seed(13)
+elast_fit <- model_function("glmnet", 0.75, -1, 2, control1)
 elast_plot <- plot_function(elast_fit)
-lambda_function(elast_fit)
-coef_function(elast_fit)
+elast_lambda <- lambda_function(elast_fit)
+elast_coef <- coef_function(elast_fit)
 elast_mse <- predict_mse_function(elast_fit)
 ```
 
+The lambda that gives the lowest RMSE value is `r elast_lambda`. The lasso model for this lambda has `r elast_coef - 1` predictors in the final model, including the various factor levels to predict LDL cholesterol levels. 
+
+The lasso model gives a cross-validated MSE of `r elast_mse`. 
+
 ### Elastic Net Model (alpha = 0.25) with 10-fold CV
-```{r}
+```{r, echo=FALSE}
+set.seed(13)
 elast_25_fit <- model_function("glmnet", 0.25, 0, 5, control1)
 elast_25_plot <- plot_function(elast_25_fit)
-lambda_function(elast_25_fit)
-coef_function(elast_25_fit)
+elast_25_lambda <- lambda_function(elast_25_fit)
+elast_25_coef <- coef_function(elast_25_fit)
 elast_25_mse <- predict_mse_function(elast_25_fit)
 ```
 
+The lambda that gives the lowest RMSE value is `r elast_25_lambda`. The lasso model for this lambda has `r elast_25_coef - 1` predictors in the final model, including the various factor levels to predict LDL cholesterol levels. 
+
+The lasso model gives a cross-validated MSE of `r elast_25_mse`. 
+
 ### Comparing models
 
-```{r}
+```{r, echo=FALSE}
 resamp <- resamples(list(lm = linear_fit,
                          lasso = lasso_fit, 
                          ridge = ridge_fit, 
@@ -186,61 +227,85 @@ summary(resamp)
 bwplot(resamp, metric = "RMSE")
 ```
 
-# LOOCV
+From the boxplot and confirmed by `summary(resamp)`, we can see that the ridge regression gives the lowest RMSE among the five models when predicting cholesterol level when using 10-fold cross-validation.
+
+## LOOCV
 
 ### Linear Model with LOOCV 
-```{r}
+```{r, echo=FALSE}
+set.seed(13)
 linear_loocv <- train(lbdldl ~ .,
                    data = train_dat,
                    method = "lm",
                    trControl = control2)
 
-summary(linear_loocv)
+linear_loocv_summary <- summary(linear_loocv)
 
 lm_prediction_loocv <- predict(linear_loocv, newdata = test_dat)
-lm_mse <- mse(y_test, lm_prediction_loocv)
+lm_mse_loocv <- mse(y_test, lm_prediction_loocv)
 ```
 
+The linear model with LOOCV has a predicted MSE of `r lm_mse_loocv`.
 
 ### Lasso Model with LOOCV
-```{r}
-lasso_loocv <- model_function("glmnet", 1, -1, 5, control2)
+```{r, echo=FALSE}
+set.seed(13)
+lasso_loocv <- model_function("glmnet", 1, -1, 2, control2)
 lasso_plot_loocv <- plot_function(lasso_loocv)
-lambda_function(lasso_loocv)
-coef_function(lasso_loocv)
+lasso_loocv_lambda <- lambda_function(lasso_loocv)
+lasso_loocv_coef <- coef_function(lasso_loocv)
 lasso_mse_loocv <- predict_mse_function(lasso_loocv)
 ```
 
+The lambda that gives the lowest RMSE value is `r lasso_loocv_lambda`. The lasso model for this lambda has `r lasso_loocv_coef - 1` predictors in the final model, including the various factor levels to predict LDL cholesterol levels. 
+
+The lasso model gives a cross-validated MSE of `r lasso_mse_loocv`. 
+
 ### Ridge Model with LOOCV 
-```{r}
-ridge_loocv <- model_function("glmnet", 0, -1, 5, control2)
+```{r, echo=FALSE}
+set.seed(13)
+ridge_loocv <- model_function("glmnet", 0, 0, 5, control2)
 ridge_plot_loocv <- plot_function(ridge_loocv)
-lambda_function(ridge_loocv)
-coef_function(ridge_loocv)
+ridge_loocv_lambda <- lambda_function(ridge_loocv)
+ridge_loocv_coef <- coef_function(ridge_loocv)
 ridge_mse_loocv <- predict_mse_function(ridge_loocv)
 ```
 
+The lambda that gives the lowest RMSE value is `r ridge_loocv_lambda`. The lasso model for this lambda has `r ridge_loocv_coef - 1` predictors in the final model, including the various factor levels to predict LDL cholesterol levels. 
+
+The lasso model gives a cross-validated MSE of `r ridge_mse_loocv`.
+
 ### Elastic Net Model (alpha = 0.75) with LOOCV 
-```{r}
-elast_loocv <- model_function("glmnet", 0.75, -1, 5, control2)
+```{r, echo=FALSE}
+set.seed(13)
+elast_loocv <- model_function("glmnet", 0.75, -1, 2, control2)
 elast_plot_loocv <- plot_function(elast_loocv)
-lambda_function(elast_loocv)
-coef_function(elast_loocv)
+elast_loocv_lambda <- lambda_function(elast_loocv)
+elast_loocv_coef <- coef_function(elast_loocv)
 elast_mse_loocv <- predict_mse_function(elast_loocv)
 ```
 
+The lambda that gives the lowest RMSE value is `r elast_loocv_lambda `. The lasso model for this lambda has `r elast_loocv_coef - 1` predictors in the final model, including the various factor levels to predict LDL cholesterol levels. 
+
+The lasso model gives a cross-validated MSE of `r elast_mse_loocv`.
+
 ### Elastic Net Model (alpha = 0.25) with LOOCV
-```{r}
-elast_25_loocv <- model_function("glmnet", 0.25, -1, 5, control2)
+```{r, echo=FALSE}
+set.seed(13)
+elast_25_loocv <- model_function("glmnet", 0.25, -1, 2, control2)
 elast_25_plot_loocv <- plot_function(elast_25_loocv)
-lambda_function(elast_25_loocv)
-coef_function(elast_25_loocv)
+elast_25_loocv_lambda <- lambda_function(elast_25_loocv)
+elast_25_loocv_coef <- coef_function(elast_25_loocv)
 elast_25_mse_loocv <- predict_mse_function(elast_25_loocv)
 ```
 
+The lambda that gives the lowest RMSE value is `r elast_25_loocv_lambda`. The lasso model for this lambda has `r elast_25_loocv_coef - 1` predictors in the final model, including the various factor levels to predict LDL cholesterol levels. 
+
+The lasso model gives a cross-validated MSE of `r elast_25_mse_loocv`.
+
 ### Comparing models
 
-```{r}
+```{r, echo=FALSE}
 resamp_loocv <- resamples(list(linear = linear_loocv,
                                lasso_loocv = lasso_loocv,
                ridge_loocv = ridge_loocv,
@@ -249,5 +314,56 @@ resamp_loocv <- resamples(list(linear = linear_loocv,
 
 summary(resamp_loocv)
 
-bwplot(resamp_loocv, metric = "RMSE", xlim = c(0, 50)) 
+bwplot(resamp_loocv, metric = "RMSE", xlim = c(0, 100)) 
+```
+
+By `summary(resamp)` since the boxplot makes it hard to see which RMSE is the lowest, the ridge regression gives the lowest RMSE among the five models when predicting cholesterol level when using 10-fold cross-validation.
+
+# Conclusions
+Looking at both the 10-fold cross validation and leave one out cross validation, the ridge model had the lowest RMSE when comparing the various models we tested. We did not expect the cross validation methods to give us drastically conclusions, but the run time required 10-fold and LOOCV is very different, as LOOCV took much longer. The range of RMSE when comparing the models when using LOOCV (given the bias-variance tradeoff with LOOCV generally having less bias) was also much wider than 10-fold. For the purposes of our dataset and object, I believe 10-fold CV is the more appropriate cross-validation method. 
+
+Since the ridge regression accounts for correlated predictors and ultimately shrinks correlated predictors together, it makes sense that the ridge model performed the best. A person's health, and in our case, LDL cholesterol depends on a plethora of health and diet choices; these choices are often correlated with each other. 
+
+That being said, all the models still have high RMSE's and low R-squared values. All the regression techniques we set out using are linear regression techniques, allowing for not much model flexibility. This suggests that the models created in this project still can be improved to predict LDL cholesterol with either more flexible polynomial models or techniques we will learn later in the course.  
+
+# Appendices
+## A1
+Table of Predictors and Corresponding Variable Names
+```{r echo = FALSE}
+variable_df = tibble(
+  variable = colnames(train_dat[, -1]),
+  definition = c("Respondent Sequence Number", "LDL/Triglyceride Levels (Outcome)", 
+                "Albumin (ug/mL)", "Creatinine (mg/dL)", "Alkaline Phosphotase (IU/L)",
+                "Bicarbonate (mmol/L)", "Glucose (mg/dL)", "Gamma Glutamyl Transferase (U/L)",
+                "Lactate Dehydrogenase (U/L)", "Phosphorus (mg/dL)", "Potassium (mmol/L)", 
+                "Total Bilirubin (mg/dL)", "Uric acid (mg/dL)", "Lymphocyte percent (%)",
+                "Monocyte percent (%)", "Segmented neutrophils percent (%)", "Hemoglobin (g/dL)",
+                "Hematocrit (%)", "High-Sensitivity C-Reactive Protein (hs-CRP) (mg/L)", 
+                "Body Mass Index (kg/m**2)", "Waist Circumference (cm)", 
+                "Systolic: Blood pressure", "Diastolic: Blood pressure", 
+                "How often do you add ordinary salt to your food at the table?", 
+                "How often is ordinary salt or seasoned salt added in cooking or preparing foods in your household?", 
+                "Are you currently on any kind of diet?", 
+                "Total number of foods/beverages reported in the individual foods file", 
+                "Energy (kcal)", "Protein (gm)", "Carbohydrate (gm)", "Total sugars (gm)",
+                "Dietary fiber (gm)", "Total fat (gm)", "Caffeine (mg)", "Alcohol (gm)", 
+                "Was the amount of food that you ate yesterday much more than usual, usual, or much less than usual?", 
+                "Total plain water drank yesterday", 
+                "During the past 30 days did you eat any types of shellfish?", 
+                "During the past 30 days did you eat any types of fish?", 
+                "Total # of Dietary Supplements Taken", "Total # of Antacids Taken", 
+                "Money Spent at Grocery Stores in the Last 30 Days", 
+                "Money Spent on Eating Out in the Last 30 Days", 
+                "Money Spent on Takeout in the Last 30 Days", "Number of Meals Ordered", 
+                "Have you ever been told by a doctor or other health professional that you had hypertension?",
+                "Ever had any pain or discomfort in chest", "General Health Level", 
+                "Ever told that you had Diabetes", "How healthy is overall diet?", 
+                "Worried food would run out", "Can't afford to eat balanced meals", 
+                "Household food security", "Does the insurance plan cover prescription medicine?",
+                "Do you get regular physical activity?", "Smoked 100 cigarettes in lifetime", 
+                "Gender", "Age", "Education", "Recorded Race Hispanic Origin", 
+                "Recorded Race with Non-Hispanic Asian Category", "Born in the US or not", 
+                "Ratio of Family Income to Poverty")
+)
+knitr::kable(variable_df)
 ```
